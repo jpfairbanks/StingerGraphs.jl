@@ -149,21 +149,15 @@ function outdegree(s::Stinger, src::Int64)
 end
 
 "Return a `Vector` of indices representing the successors of the source"
-function getsuccessors(s::Stinger, src::Int64)
-    #Ideally, allocating a buffer would be preffered.
-    #This makes 2 calls to outdegree - one from here and one from inside C
-    outdeg = outdegree(s, src)
-    vertexneighbors = zeros(Int64, outdeg)
-    if outdeg==0
-        return vertexneighbors
-    end
+function getsuccessors!(s::Stinger, src::Int64, storage::Array{Int64})
+    outdeg = Csize_t[0]
     ccall(
         dlsym(stinger_core_lib, "stinger_gather_successors"),
         Void,
         (
             Ptr{Void}, #Stinger instance
             Int64, #Source vertex
-            Ptr{Int64}, #Outdegree variable
+            Ptr{Csize_t}, #Outdegree variable
             Ptr{Int64}, #Output buffer
             Ptr{Int64}, #weight
             Ptr{Int64}, #timefirst
@@ -173,15 +167,16 @@ function getsuccessors(s::Stinger, src::Int64)
         ),
         s,
         src,
-        pointer_from_objref(outdeg),
-        vertexneighbors,
+        outdeg,
+        storage,
         C_NULL,
         C_NULL,
         C_NULL,
         C_NULL,
         typemax(Int64)
     )
-    vertexneighbors
+    # return view(storage, 1:outdeg[1])
+    return outdeg[1]
 end
 
 "Return the weight of the edge. If it doesn't exist return 0."
