@@ -1,0 +1,5 @@
+pipeline:
+    build:
+      image: rohitvarkey/stingerwrapper_dyno_bench
+      commands:
+          - julia -e 'include("benchmark/bfs_bench.jl"); for i=10:20 bench(i,16) end'
